@@ -33,26 +33,6 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr>
-									<th scope="row">1</th>
-									<td>Mark</td>
-									<td>Otto</td>
-									<td>@mdo</td>
-									<td>@mdo</td>
-								</tr>
-								<tr>
-									<th scope="row">2</th>
-									<td>Jacob</td>
-									<td>Thornton</td>
-									<td>@fat</td>
-									<td>@mdo</td>
-								</tr>
-								<tr>
-									<th scope="row">3</th>
-									<td>Larry the Bird</td>
-									<td>@twitter</td>
-									<td>@mdo</td>
-								</tr>
 							</tbody>
 						</table>
 					</div>
@@ -76,7 +56,7 @@
 							</div>
 							<div class="form-group">
 								<label for="first-train-time">First Train Time (HH:MM military time)</label>
-								<input type="time" class="form-control" id="firstTrainTime">
+								<input type="text" class="form-control" id="firstTrainTime">
 							</div>
 							<div class="form-group">
 								<label for="frequency">Frequency (min)</label>
@@ -138,24 +118,32 @@
 
   database.ref().on("child_added", function(snapshot) {
 
+  	var frequency = snapshot.val().frequency;
+
+    var firstTrainTimeInput = snapshot.val().firstTrainTime;
+
+    // First Time (pushed back 1 year to make sure it comes before current time)
+    var firstTimeConverted = moment(firstTrainTimeInput, "hh:mm").subtract(1, "years");
+
+	// Difference between the times
+    var diffTime = moment().diff(moment(firstTimeConverted), "minutes");
+
+    // Time apart (remainder)
+    var tRemainder = diffTime % frequency;
+
+    // Minute Until Train
+    var tMinutesTillTrain = frequency - tRemainder;
+
+    // Next Train
+    var nextTrainTime = moment().add(tMinutesTillTrain, "minutes");
+    var nextTrainTimeFormatted = moment(nextTrainTime).format("hh:mm");
+
     var newRow = $("<tr>");
     var newTrainName = $("<td>").text(snapshot.val().name);
     var newDestination = $("<td>").text(snapshot.val().destination);
     var newFrequnecy = $("<td>").text(snapshot.val().frequency);
-    var nextTrain = $("<td>").text("insert moment.js time");
-    var minutesAway = $("<td>").text("insert moment js min");
-
-    var currentTime = moment().valueOf();
-    var inputTime = moment(firstTrainTime);
-    var inputFrequency = moment(frequency);
-
-    console.log(currentTime);
-    console.log(snapshot.val().firstTrainTime);
-
-    // first train in military time
-    // frequency in minutes
-    // next train... first train time + frequency until > current time
-    // minutes away = current time - next train
+    var nextTrain = $("<td>").text(nextTrainTimeFormatted);
+    var minutesAway = $("<td>").text(tMinutesTillTrain);
 
     newRow.append(newTrainName);
     newRow.append(newDestination);
@@ -164,11 +152,6 @@
     newRow.append(minutesAway);
 
     $("#trainTable").append(newRow);
-
-    $("#trainName").text(snapshot.val().name);
-    $("#destination").text(snapshot.val().email);
-    $("#firstTrainTime").text(snapshot.val().firstTrainTime);
-    $("#frequency").text(snapshot.val().frequency);
 
       // Handle the errors
     }, function(errorObject) {
